@@ -1,5 +1,5 @@
 from scipy.stats import norm
-from math import exp, sqrt, pi
+from math import exp, sqrt, pi, log
 
 
 def d_1(S, K, T, r, sigma):
@@ -16,7 +16,6 @@ def d_1(S, K, T, r, sigma):
     Returns:
     float : d1 value
     """
-    from math import log, sqrt
 
     return (log(S / K) + (r + 0.5 * sigma**2) * T) / (sigma * sqrt(T))
 
@@ -107,6 +106,15 @@ def option_price(option_type, S, K, T, r, sigma):
     option_type : 'call' or 'put'
     S, K, T, r, sigma : as usual
     """
+    # --- early payoff at expiry ---
+    if T <= 0:
+        if option_type.lower() == "call":
+            return max(S - K, 0.0)
+        elif option_type.lower() == "put":
+            return max(K - S, 0.0)
+        else:
+            raise ValueError("option_type must be 'call' or 'put'")
+
     d1 = d_1(S, K, T, r, sigma)
     d2 = d_2(S, K, T, r, sigma)
     if option_type.lower() == "call":
@@ -118,6 +126,13 @@ def option_price(option_type, S, K, T, r, sigma):
 
 
 def delta(option_type, S, K, T, r, sigma):
+    # --- at expiry delta is step function ---
+    if T <= 0:
+        if option_type.lower() == "call":
+            return 1.0 if S > K else 0.0
+        else:
+            return -1.0 if S < K else 0.0
+
     d1 = d_1(S, K, T, r, sigma)
     if option_type.lower() == "call":
         return norm.cdf(d1)
@@ -128,16 +143,22 @@ def delta(option_type, S, K, T, r, sigma):
 
 
 def gamma(S, K, T, r, sigma):
+    if T <= 0:
+        return 0.0
     d1 = d_1(S, K, T, r, sigma)
     return pdf(d1) / (S * sigma * sqrt(T))
 
 
 def vega(S, K, T, r, sigma):
+    if T <= 0:
+        return 0.0
     d1 = d_1(S, K, T, r, sigma)
     return S * pdf(d1) * sqrt(T)
 
 
 def theta(option_type, S, K, T, r, sigma):
+    if T <= 0:
+        return 0.0
     d1 = d_1(S, K, T, r, sigma)
     d2 = d_2(S, K, T, r, sigma)
     term1 = -(S * pdf(d1) * sigma) / (2 * sqrt(T))
@@ -151,6 +172,8 @@ def theta(option_type, S, K, T, r, sigma):
 
 
 def rho(option_type, S, K, T, r, sigma):
+    if T <= 0:
+        return 0.0
     d2 = d_2(S, K, T, r, sigma)
     if option_type.lower() == "call":
         return K * T * exp(-r * T) * norm.cdf(d2)

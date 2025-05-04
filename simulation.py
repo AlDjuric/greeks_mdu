@@ -62,4 +62,5 @@ if __name__ == "__main__":
     plt.xlabel("Time (trading days)")
     plt.ylabel("Price")
     plt.legend()
-    plt.show()
+    plt.savefig("simulation.png", dpi=150)
+    print("Saved plot to simulation.png")
